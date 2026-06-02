@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# PyCharm
+.idea/
+
+# Virtual environment
+.venv/
+venv/
+
+# Environment variables
+.env.local
+.env
+
+
+# Data files
+data/
+*.csv
+*.json
+*.parquet
+
+# Logs
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
