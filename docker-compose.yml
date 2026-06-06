@@ -49,6 +49,24 @@ services:
     volumes:
       - minio_data:/data
 
+  spark:
+    image: apache/spark:3.5.1-python3
+    container_name: orders_spark
+    depends_on:
+      - minio
+      - postgres
+    env_file:
+      - .env.local
+    environment:
+      MINIO_ENDPOINT: minio:9000
+      PYSPARK_PYTHON: python3
+      PYSPARK_DRIVER_PYTHON: python3
+    volumes:
+      - ./:/app
+    working_dir: /app
+    command: [ "/bin/bash", "-lc", "sleep infinity" ]
+    ports:
+      - "4040:4040"
 volumes:
   postgres_data:
   minio_data:
