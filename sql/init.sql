@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS orders_cleaned (
+    event_id TEXT PRIMARY KEY,
+    order_id TEXT NOT NULL,
+    event_time TEXT,
+    event_time_ts TIMESTAMP,
+    event_date DATE,
+    event_type TEXT,
+    user_id BIGINT,
+    source_cart_id BIGINT,
+    city TEXT,
+    order_status TEXT,
+    payment_method TEXT,
+    total_amount DOUBLE PRECISION,
+    discounted_total DOUBLE PRECISION,
+    delivery_fee DOUBLE PRECISION,
+    items_count BIGINT,
+    total_quantity BIGINT,
+    source TEXT,
+    processed_at TIMESTAMP
+);

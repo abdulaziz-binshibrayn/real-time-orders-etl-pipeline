@@ -7,6 +7,9 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
     ports:
       - "2181:2181"
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_log:/var/lib/zookeeper/log
 
   kafka:
     image: confluentinc/cp-kafka:7.6.1
@@ -15,6 +18,8 @@ services:
       - zookeeper
     ports:
       - "9092:9092"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -36,6 +41,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
 
   minio:
     image: minio/minio:latest
@@ -63,10 +69,16 @@ services:
       PYSPARK_DRIVER_PYTHON: python3
     volumes:
       - ./:/app
+      - spark_ivy_cache:/tmp/.ivy2
     working_dir: /app
-    command: [ "/bin/bash", "-lc", "sleep infinity" ]
+    user: root
+    command: [ "/bin/bash", "-lc", "mkdir -p /tmp/.ivy2/cache /tmp/.ivy2/jars && chmod -R 777 /tmp/.ivy2 && sleep infinity" ]
     ports:
       - "4040:4040"
 volumes:
   postgres_data:
   minio_data:
+  spark_ivy_cache:
+  kafka_data:
+  zookeeper_data:
+  zookeeper_log:

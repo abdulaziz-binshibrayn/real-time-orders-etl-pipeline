@@ -9,6 +9,12 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
 
+POSTGRES_HOST = os.getenv("POSTGRES_HOST", "postgres")
+POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
+POSTGRES_DB = os.getenv("POSTGRES_DB")
+POSTGRES_USER = os.getenv("POSTGRES_USER")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+POSTGRES_TABLE = os.getenv("POSTGRES_TABLE", "orders_cleaned")
 MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "minio:9000")
 MINIO_ROOT_USER = os.getenv("MINIO_ROOT_USER")
 MINIO_ROOT_PASSWORD = os.getenv("MINIO_ROOT_PASSWORD")
@@ -133,6 +139,24 @@ def write_outputs(clean_df: DataFrame, rejected_df: DataFrame) -> None:
     .parquet(rejected_path)
     )
 
+def write_to_postgres(clean_df: DataFrame) -> None:
+    jdbc_url = f"jdbc:postgresql://{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
+
+    logging.info("Writing clean orders to PostgresSQL table: %s", POSTGRES_TABLE)
+
+    (
+     clean_df.write
+    .format("jdbc")
+    .option("url",jdbc_url)
+    .option("dbtable", POSTGRES_TABLE)
+    .option("user", POSTGRES_USER)
+    .option("password", POSTGRES_PASSWORD)
+    .option("driver", "org.postgresql.Driver")
+    .mode("overwrite")
+    .option("truncate", "true")
+    .save()
+
+    )
 
 def run() -> None:
     spark = create_spark_session()
@@ -147,6 +171,8 @@ def run() -> None:
         clean_df, rejected_df = transform_orders(raw_df)
 
         write_outputs(clean_df, rejected_df)
+
+        write_to_postgres(clean_df)
 
         logging.info("Orders ETL job completed successfully.")
 
