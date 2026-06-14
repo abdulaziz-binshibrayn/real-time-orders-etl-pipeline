@@ -24,7 +24,7 @@ data/
 
 # Logs
 logs/
-
+airflow/logs/
 # OS
 .DS_Store
 Thumbs.db

@@ -125,7 +125,7 @@ def write_outputs(clean_df: DataFrame, rejected_df: DataFrame) -> None:
 
     logging.info("Writing clean orders to: %s", processed_path)
     (
-        clean_df.write
+        clean_df.coalesce(1).write
         .mode("overwrite")
         .partitionBy("event_date")
         .parquet(processed_path)
@@ -133,10 +133,10 @@ def write_outputs(clean_df: DataFrame, rejected_df: DataFrame) -> None:
 
     logging.info("Writing rejected orders to: %s", rejected_path)
     (
-    rejected_df.write
-    .mode("overwrite")
-    .partitionBy("event_date")
-    .parquet(rejected_path)
+        rejected_df.coalesce(1).write
+        .mode("overwrite")
+        .partitionBy("event_date")
+        .parquet(rejected_path)
     )
 
 def write_to_postgres(clean_df: DataFrame) -> None:
@@ -145,7 +145,7 @@ def write_to_postgres(clean_df: DataFrame) -> None:
     logging.info("Writing clean orders to PostgresSQL table: %s", POSTGRES_TABLE)
 
     (
-     clean_df.write
+     clean_df.coalesce(1).write
     .format("jdbc")
     .option("url",jdbc_url)
     .option("dbtable", POSTGRES_TABLE)
