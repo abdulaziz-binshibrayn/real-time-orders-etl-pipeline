@@ -1,0 +1,160 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Real-Time Orders ETL Pipeline Architecture</title>
+  <desc id="desc">DummyJSON data flows through a Python producer, Kafka, a Python consumer, MinIO raw storage, and PySpark ETL. Airflow triggers Spark. Spark writes processed and rejected Parquet files and clean records to PostgreSQL.</desc>
+
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#334155"/>
+    </marker>
+    <marker id="arrowPurple" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#7c3aed"/>
+    </marker>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#0f172a" flood-opacity="0.12"/>
+    </filter>
+    <style>
+      .title { font: 700 42px Arial, Helvetica, sans-serif; fill: #0f172a; }
+      .subtitle { font: 400 20px Arial, Helvetica, sans-serif; fill: #64748b; }
+      .label { font: 700 22px Arial, Helvetica, sans-serif; fill: #0f172a; }
+      .note { font: 400 16px Arial, Helvetica, sans-serif; fill: #475569; }
+      .section { font: 700 17px Arial, Helvetica, sans-serif; fill: #64748b; letter-spacing: 1px; }
+      .step { font: 700 16px Arial, Helvetica, sans-serif; fill: #ffffff; }
+      .data-line { stroke: #334155; stroke-width: 4; fill: none; marker-end: url(#arrow); }
+      .orchestration-line { stroke: #7c3aed; stroke-width: 4; stroke-dasharray: 11 9; fill: none; marker-end: url(#arrowPurple); }
+    </style>
+  </defs>
+
+  <rect width="1600" height="900" rx="30" fill="#f8fafc"/>
+
+  <text x="800" y="70" text-anchor="middle" class="title">Real-Time Orders ETL Pipeline</text>
+  <text x="800" y="106" text-anchor="middle" class="subtitle">Streaming ingestion, durable raw storage, batch processing, and orchestration</text>
+
+  <!-- Main ingestion section -->
+  <rect x="55" y="155" width="1490" height="245" rx="24" fill="#ffffff" stroke="#dbeafe" stroke-width="3"/>
+  <text x="90" y="190" class="section">STREAMING INGESTION</text>
+
+  <!-- DummyJSON -->
+  <g filter="url(#shadow)">
+    <rect x="90" y="225" width="220" height="125" rx="20" fill="#ecfdf5" stroke="#22c55e" stroke-width="3"/>
+  </g>
+  <circle cx="120" cy="252" r="16" fill="#16a34a"/>
+  <text x="120" y="258" text-anchor="middle" class="step">1</text>
+  <text x="200" y="275" text-anchor="middle" class="label">DummyJSON API</text>
+  <text x="200" y="307" text-anchor="middle" class="note">Cart source data</text>
+
+  <!-- Producer -->
+  <g filter="url(#shadow)">
+    <rect x="385" y="225" width="220" height="125" rx="20" fill="#eff6ff" stroke="#3b82f6" stroke-width="3"/>
+  </g>
+  <circle cx="415" cy="252" r="16" fill="#2563eb"/>
+  <text x="415" y="258" text-anchor="middle" class="step">2</text>
+  <text x="495" y="275" text-anchor="middle" class="label">Python Producer</text>
+  <text x="495" y="307" text-anchor="middle" class="note">Builds order events</text>
+
+  <!-- Kafka -->
+  <g filter="url(#shadow)">
+    <rect x="680" y="225" width="220" height="125" rx="20" fill="#fffbeb" stroke="#f59e0b" stroke-width="3"/>
+  </g>
+  <circle cx="710" cy="252" r="16" fill="#d97706"/>
+  <text x="710" y="258" text-anchor="middle" class="step">3</text>
+  <text x="790" y="275" text-anchor="middle" class="label">Apache Kafka</text>
+  <text x="790" y="307" text-anchor="middle" class="note">orders_raw_events</text>
+
+  <!-- Consumer -->
+  <g filter="url(#shadow)">
+    <rect x="975" y="225" width="220" height="125" rx="20" fill="#eff6ff" stroke="#3b82f6" stroke-width="3"/>
+  </g>
+  <circle cx="1005" cy="252" r="16" fill="#2563eb"/>
+  <text x="1005" y="258" text-anchor="middle" class="step">4</text>
+  <text x="1085" y="275" text-anchor="middle" class="label">Python Consumer</text>
+  <text x="1085" y="307" text-anchor="middle" class="note">Uploads then commits offset</text>
+
+  <!-- MinIO Raw -->
+  <g filter="url(#shadow)">
+    <rect x="1270" y="225" width="220" height="125" rx="20" fill="#f0fdfa" stroke="#14b8a6" stroke-width="3"/>
+  </g>
+  <circle cx="1300" cy="252" r="16" fill="#0f766e"/>
+  <text x="1300" y="258" text-anchor="middle" class="step">5</text>
+  <text x="1380" y="275" text-anchor="middle" class="label">MinIO Raw</text>
+  <text x="1380" y="307" text-anchor="middle" class="note">Durable JSON storage</text>
+
+  <!-- Straight arrows -->
+  <path d="M310 287 H385" class="data-line"/>
+  <path d="M605 287 H680" class="data-line"/>
+  <path d="M900 287 H975" class="data-line"/>
+  <path d="M1195 287 H1270" class="data-line"/>
+
+  <!-- Processing section -->
+  <rect x="55" y="455" width="1490" height="350" rx="24" fill="#ffffff" stroke="#ede9fe" stroke-width="3"/>
+  <text x="90" y="490" class="section">PROCESSING AND OUTPUTS</text>
+
+  <!-- Airflow -->
+  <g filter="url(#shadow)">
+    <rect x="120" y="565" width="250" height="135" rx="20" fill="#faf5ff" stroke="#a855f7" stroke-width="3"/>
+  </g>
+  <circle cx="150" cy="592" r="16" fill="#7c3aed"/>
+  <text x="150" y="598" text-anchor="middle" class="step">6</text>
+  <text x="245" y="615" text-anchor="middle" class="label">Apache Airflow</text>
+  <text x="245" y="647" text-anchor="middle" class="note">orders_etl_pipeline</text>
+  <text x="245" y="674" text-anchor="middle" class="note">Orchestrates the Spark job</text>
+
+  <!-- Spark -->
+  <g filter="url(#shadow)">
+    <rect x="500" y="535" width="300" height="195" rx="22" fill="#fff7ed" stroke="#f97316" stroke-width="3"/>
+  </g>
+  <circle cx="535" cy="567" r="16" fill="#ea580c"/>
+  <text x="535" y="573" text-anchor="middle" class="step">7</text>
+  <text x="650" y="595" text-anchor="middle" class="label">PySpark ETL</text>
+  <text x="650" y="630" text-anchor="middle" class="note">Read raw JSON</text>
+  <text x="650" y="658" text-anchor="middle" class="note">Validate · Clean · Transform</text>
+  <text x="650" y="686" text-anchor="middle" class="note">Split valid and rejected records</text>
+
+  <!-- Outputs rail -->
+  <path d="M800 632 H875" stroke="#334155" stroke-width="4" fill="none"/>
+  <path d="M875 525 V740" stroke="#334155" stroke-width="4" fill="none"/>
+
+  <!-- Processed -->
+  <g filter="url(#shadow)">
+    <rect x="950" y="500" width="260" height="105" rx="18" fill="#eff6ff" stroke="#3b82f6" stroke-width="3"/>
+  </g>
+  <circle cx="980" cy="527" r="16" fill="#2563eb"/>
+  <text x="980" y="533" text-anchor="middle" class="step">8A</text>
+  <text x="1080" y="545" text-anchor="middle" class="label">Processed Parquet</text>
+  <text x="1080" y="575" text-anchor="middle" class="note">Clean analytical dataset</text>
+
+  <!-- Rejected -->
+  <g filter="url(#shadow)">
+    <rect x="950" y="630" width="260" height="105" rx="18" fill="#fff1f2" stroke="#f43f5e" stroke-width="3"/>
+  </g>
+  <circle cx="980" cy="657" r="16" fill="#e11d48"/>
+  <text x="980" y="663" text-anchor="middle" class="step">8B</text>
+  <text x="1080" y="675" text-anchor="middle" class="label">Rejected Parquet</text>
+  <text x="1080" y="705" text-anchor="middle" class="note">Invalid rows + rejection reason</text>
+
+  <!-- PostgreSQL -->
+  <g filter="url(#shadow)">
+    <rect x="1280" y="565" width="235" height="135" rx="20" fill="#ecfeff" stroke="#06b6d4" stroke-width="3"/>
+  </g>
+  <circle cx="1310" cy="592" r="16" fill="#0891b2"/>
+  <text x="1310" y="598" text-anchor="middle" class="step">8C</text>
+  <text x="1398" y="615" text-anchor="middle" class="label">PostgreSQL</text>
+  <text x="1398" y="647" text-anchor="middle" class="note">orders_cleaned</text>
+  <text x="1398" y="674" text-anchor="middle" class="note">Serving table</text>
+
+  <!-- Clean output arrows -->
+  <path d="M875 552 H950" class="data-line"/>
+  <path d="M875 682 H950" class="data-line"/>
+  <path d="M1210 552 H1240 V632 H1280" class="data-line"/>
+
+  <!-- Raw to Spark -->
+  <path d="M1380 350 V430 H650 V535" class="data-line"/>
+
+  <!-- Airflow to Spark -->
+  <path d="M370 632 H500" class="orchestration-line"/>
+
+  <!-- Legend -->
+  <line x1="575" y1="838" x2="640" y2="838" stroke="#334155" stroke-width="4" marker-end="url(#arrow)"/>
+  <text x="655" y="844" class="note">Data flow</text>
+  <line x1="790" y1="838" x2="855" y2="838" stroke="#7c3aed" stroke-width="4" stroke-dasharray="11 9" marker-end="url(#arrowPurple)"/>
+  <text x="870" y="844" class="note">Orchestration</text>
+</svg>
