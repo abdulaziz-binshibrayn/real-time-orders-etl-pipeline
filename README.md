@@ -1,275 +1,112 @@
 # Real-Time Orders ETL Pipeline
 
-An end-to-end data engineering project that combines **real-time streaming ingestion** with **batch ETL processing**.
+An end-to-end data engineering project that combines **real-time event ingestion** with **batch ETL processing**.
 
-The pipeline generates order events from the DummyJSON API, publishes them to Apache Kafka, stores raw events in MinIO, processes them using PySpark, separates valid and rejected records, loads clean data into PostgreSQL, and orchestrates the ETL job with Apache Airflow.
-
----
+Order events are generated from the DummyJSON API, streamed through Apache Kafka, stored in MinIO, processed with PySpark, and loaded into PostgreSQL. Apache Airflow orchestrates the ETL job, while Docker Compose runs the complete local stack.
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    subgraph SOURCE["Data Source"]
-        A["DummyJSON API"]
-    end
-
-    subgraph STREAMING["Streaming Ingestion"]
-        B["Python Producer"]
-        C[("Kafka<br/>orders_raw_events")]
-        D["Python Consumer"]
-    end
-
-    subgraph LAKE["MinIO Data Lake"]
-        E[("Raw JSON")]
-        F[("Processed Parquet")]
-        G[("Rejected Parquet")]
-    end
-
-    subgraph PROCESSING["Data Processing"]
-        H["PySpark ETL Job"]
-    end
-
-    subgraph ORCHESTRATION["Orchestration"]
-        I["Apache Airflow"]
-    end
-
-    subgraph SERVING["Serving Layer"]
-        J[("PostgreSQL<br/>orders_cleaned")]
-    end
-
-    A --> B
-    B --> C
-    C --> D
-    D --> E
-
-    I --> H
-    E --> H
-
-    H --> F
-    H --> G
-    H --> J
-```
-
----
-
-## Pipeline Flow
-
-```mermaid
-flowchart TD
-    A["Fetch carts from DummyJSON"] --> B["Create order events"]
-    B --> C["Publish events to Kafka"]
-    C --> D["Consume Kafka messages"]
-    D --> E["Store raw JSON in MinIO"]
-    E --> F["Airflow triggers Spark ETL"]
-    F --> G["Validate and transform records"]
-
-    G -->|Valid| H["Write processed Parquet"]
-    G -->|Invalid| I["Write rejected Parquet"]
-    G -->|Clean data| J["Load into PostgreSQL"]
-```
-
----
+![Real-Time Orders ETL Pipeline Architecture](docs/architecture.svg)
 
 ## Tech Stack
 
-| Technology     | Purpose                            |
-| -------------- | ---------------------------------- |
-| Python         | Producer and consumer applications |
-| Apache Kafka   | Real-time event streaming          |
-| MinIO          | S3-compatible data lake            |
-| Apache Spark   | Data validation and transformation |
-| PostgreSQL     | Serving database                   |
-| Apache Airflow | ETL orchestration                  |
-| Docker Compose | Local infrastructure management    |
+`Python` · `Apache Kafka` · `MinIO` · `PySpark` · `PostgreSQL` · `Apache Airflow` · `Docker Compose`
 
----
+## Pipeline Flow
 
-## Key Features
+1. The producer fetches carts from DummyJSON and creates order events.
+2. Events are published to the Kafka topic `orders_raw_events`.
+3. The consumer stores each event in MinIO and commits the Kafka offset after a successful upload.
+4. Airflow triggers the PySpark ETL job.
+5. Spark validates, cleans, and transforms the raw data.
+6. Valid records are written as processed Parquet and loaded into PostgreSQL.
+7. Invalid records are written as rejected Parquet with a `rejection_reason`.
 
-* Real-time order-event ingestion with Kafka.
-* Manual Kafka offset commits after successful MinIO uploads.
-* Raw events stored as partitioned JSON files.
-* PySpark validation, cleaning, and transformation.
-* Separate processed and rejected data layers.
-* Parquet output partitioned by event date.
-* Clean records loaded into PostgreSQL using JDBC.
-* Spark ETL jobs orchestrated through Airflow.
-* Fully containerized infrastructure with persistent volumes.
-* Simulated upstream data-quality issues for realistic testing.
+## Key Engineering Features
 
----
+- Real-time Kafka ingestion.
+- Manual offset commits for at-least-once processing.
+- Durable raw-event storage in MinIO.
+- PySpark validation and transformation.
+- Separate processed and rejected datasets.
+- PostgreSQL serving layer for clean records.
+- Airflow orchestration.
+- Fully containerized local infrastructure with persistent volumes.
 
-## Data Lake Structure
+## Data Quality Validation
 
-```text
-data-lake/
-├── raw/
-│   └── orders/
-│       └── year=YYYY/
-│           └── month=MM/
-│               └── day=DD/
-│                   └── hour=HH/
-├── processed/
-│   └── orders/
-│       └── event_date=YYYY-MM-DD/
-└── rejected/
-    └── orders/
-        └── event_date=YYYY-MM-DD/
-```
+The ETL job rejects records containing missing identifiers, timestamps, city, order status, payment method, missing or invalid total amounts, or missing/negative delivery fees.
 
----
-
-## Data Quality Checks
-
-The Spark ETL job rejects records containing:
-
-* Missing event or order identifiers.
-* Missing event time.
-* Missing city.
-* Missing order status.
-* Missing payment method.
-* Missing or invalid total amount.
-* Missing or negative delivery fee.
-
-Rejected records include a `rejection_reason` column describing the detected issues.
-
-Example:
-
-```text
-missing_city,negative_delivery_fee
-```
-
----
+Rejected records include a `rejection_reason` column describing the detected issue.
 
 ## Project Structure
 
 ```text
 real-time-orders-etl-pipeline/
 ├── airflow/
-│   ├── dags/
-│   │   └── orders_etl_dag.py
+│   ├── dags/orders_etl_dag.py
 │   └── Dockerfile
-├── consumer/
-│   ├── app.py
-│   └── requirements.txt
-├── producer/
-│   ├── app.py
-│   └── requirements.txt
-├── spark/
-│   ├── jobs/
-│   │   └── orders_etl.py
-│   └── requirements.txt
-├── sql/
-│   └── init.sql
-├── .env.example
-├── .gitignore
+├── consumer/app.py
+├── producer/app.py
+├── spark/jobs/orders_etl.py
+├── sql/init.sql
 ├── docker-compose.yml
+├── .env.example
 └── README.md
 ```
 
----
+## Run Locally
 
-## Running the Project
-
-### 1. Configure environment variables
-
-Create `.env.local` based on `.env.example`.
-
-```bash
-cp .env.example .env.local
-```
-
-Update the local credentials and configuration values.
-
-> Do not commit `.env.local` to Git.
-
-### 2. Start the infrastructure
+Create `.env.local` from `.env.example`, then start the infrastructure:
 
 ```bash
 docker compose up -d --build
 ```
 
-Check the running services:
-
-```bash
-docker compose ps
-```
-
-The `orders_airflow_init` container is expected to stop after completing the Airflow database setup.
-
-### 3. Create a Python environment
+Create and activate a Python virtual environment:
 
 ```bash
 python -m venv .venv
 ```
 
-Windows:
+Windows PowerShell:
 
 ```powershell
 .venv\Scripts\Activate.ps1
 ```
 
-Install dependencies:
+Install the producer and consumer dependencies:
 
 ```bash
 pip install -r producer/requirements.txt
 pip install -r consumer/requirements.txt
 ```
 
-### 4. Start the consumer
+Start the consumer:
 
 ```bash
 python consumer/app.py
 ```
 
-### 5. Start the producer
-
-Open another terminal:
+Start the producer in another terminal:
 
 ```bash
 python producer/app.py
 ```
 
-### 6. Run the Airflow DAG
-
-Open the Airflow interface:
+Open Airflow:
 
 ```text
 http://localhost:8080
 ```
 
-Local login:
-
-```text
-Username: admin
-Password: admin
-```
-
-Enable and trigger:
+Enable and trigger the DAG:
 
 ```text
 orders_etl_pipeline
 ```
 
----
-
-## Service Endpoints
-
-| Service       | Address                 |
-| ------------- | ----------------------- |
-| Airflow UI    | `http://localhost:8080` |
-| MinIO API     | `http://localhost:9000` |
-| MinIO Console | `http://localhost:9001` |
-| Kafka         | `localhost:9092`        |
-| PostgreSQL    | `localhost:5432`        |
-| Spark UI      | `http://localhost:4040` |
-
-The Spark UI is available only while a Spark job is running.
-
----
-
-## Output
+## Verify the Output
 
 Clean records are loaded into:
 
@@ -277,56 +114,18 @@ Clean records are loaded into:
 orders_cleaned
 ```
 
-Example verification query:
-
 ```sql
 SELECT COUNT(*)
 FROM orders_cleaned;
 ```
 
-Inspect recent records:
-
-```sql
-SELECT *
-FROM orders_cleaned
-ORDER BY processed_at DESC
-LIMIT 20;
-```
-
-Example successful ETL execution:
+A successful Airflow task ends with:
 
 ```text
-Raw orders: 67
-Clean orders: 50
-Rejected orders: 17
 Orders ETL job completed successfully.
 Command exited with return code 0
 ```
 
----
-
-## Processing Model
-
-This project uses a hybrid architecture:
-
-```text
-Kafka Producer and Consumer → Streaming ingestion
-Spark ETL Job              → Batch processing
-Airflow                    → Workflow orchestration
-```
-
-Kafka handles incoming events in real time, while MinIO provides durable raw storage that allows the data to be replayed and reprocessed later.
-
----
-
 ## What This Project Demonstrates
 
-* Streaming data ingestion.
-* Event-driven architecture.
-* Data lake design.
-* PySpark ETL development.
-* Data-quality validation.
-* Workflow orchestration.
-* PostgreSQL data serving.
-* Dockerized data infrastructure.
-* End-to-end pipeline troubleshooting.
+Streaming ingestion, event-driven architecture, data lake storage, PySpark ETL, data-quality handling, workflow orchestration, PostgreSQL loading, and Dockerized infrastructure.
